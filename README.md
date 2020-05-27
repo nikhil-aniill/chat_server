@@ -9,12 +9,12 @@ A peer-peer Chat server where the files are transferred in a chatroom between pe
    - To start the client, start the client.py giving the ip address and port the server is running on like. 
      
      ```
-   - >server.py
-   - >client.py --ip <server ip> --port 5000 -w 16
-   - ><username>
-   - ><create>
-   - ><name>
-   - >@all|whohas|<filename>
-   - >@<mentioned>|getfile|<filename>
+   - server.py
+   - client.py --ip **server ip** --port **5000** -w **16**
+   - username
+   - create
+   - name
+   - @all|whohas|**filename**
+   - @**mentioned name**|getfile|**filename**
      ```
-3. ### The file is stored in the Folder code/folder. 
+3. ### The file is stored in the Folder **code/folder. 
