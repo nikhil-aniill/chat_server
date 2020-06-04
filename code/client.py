@@ -6,7 +6,7 @@ import fnmatch
 import os
 import getopt
 import threading
-
+import requests
 
 class Client(object):
   """
@@ -195,7 +195,16 @@ class Client(object):
           client_send(self.socket, '@' + msg[0][1:] + '|ERROR: Please specify filename')
           continue
         if msg[1].lower() in ['whohas'] and self.check_file(msg[2]):
-          client_send(self.socket, '@' + msg[0][1:] + '|ME')
+	  folder_name = '"' + "file=@folder/" +  msg[2] + '"'
+       	  #os.system('sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F "file=@folder/obfus1.png" -X POST localhost:5000/analyze')
+          os.system('sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F ' + folder_name + ' -X POST localhost:5000/analyze')
+          
+          #headers = {'Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP','Accept-Encoding: gzip, deflate, br'}
+	  #files = {'file': open('folder/obfus1.png', 'rb')}
+	  #r = requests.post("localhost:5000/analyze", files=files, headers=headers)
+	  #print(r.text)
+
+ 	  client_send(self.socket, '@' + msg[0][1:] + '|ME')
         elif msg[1].lower() in ['getfile']:
           msg += client_recv(self.socket)[1:]  # add cip and cport sent from client
           udpserver = UDPServer(self, msg)
