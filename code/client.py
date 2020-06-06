@@ -7,6 +7,9 @@ import os
 import getopt
 import threading
 import requests
+import subprocess
+import json
+from pprint import pprint
 
 class Client(object):
   """
@@ -32,6 +35,7 @@ class Client(object):
     self.max_conn_lock = threading.Lock()
     self.get_args()
     self.conn_left = self.max_share_count  # Counter to increment decrement inside locked code.
+    self.latest_score=0
 
     #  Try connecting to server IPs in iplist at port numbers in portlist. Exit on failure.
     for ip in self.iplist:
@@ -181,12 +185,38 @@ class Client(object):
       client_send(self.socket, '@server|exit')
       self.suspended = True
 
-  def listen_to_server(self):
+  def cuckoo_monitor(self):
+    print "\n The watchdog is active now, waiting for any new Malware analysis..."
+    reports_dir = '/home/kali/Desktop/Cuckoo/storage/analyses/'
+    latest_report='latest/reports/report.json'
+    with open(reports_dir+latest_report) as f:
+          latest_report = json.load(f)
+          print "\nPrinting info section only:"
+          pprint(latest_report["info"])
+          
+          latest_score = latest_report["info"]["score"]
+          print "\nRisk score is :", latest_score 
+
+          md5_hash = latest_report["target"]["file"]["md5"]
+          print "\nThe md5 hash of the analyzed file is :", md5_hash
+          if latest_score > 1:
+            print "\nRisk score is above 1 ! i'll call the API script"
+            md5_hash = latest_report["target"]["file"]["md5"]
+            print "\nHash of scanned file is :", md5_hash
+            fileName = latest_report["target"]["file"]["md5"]
+            print "\n fileName is :", fileName
+          else: 
+            print "\nRisk score is less than 1 ! "
+
+  def listen_to_server(self): 
     """
     Until client is suspended, keep listening to messages from server and perform necessary actions.
     Server commands to handle include: ['kill', 'exit', 'quit', 'whohas', 'getfile',
     'setshare', 'clrshare', 'setglobalshare', 'clrglobalshare', 'getsharestatus']
     """
+    stdout = ''
+    stderr = ''
+    output = ''
     while not self.suspended:
       msg = client_recv(self.socket)
       self.handle_exit_commands(msg)
@@ -197,20 +227,32 @@ class Client(object):
         if msg[1].lower() in ['whohas'] and self.check_file(msg[2]):
 	  folder_name = '"' + "file=@folder/" +  msg[2] + '"'
        	  #os.system('sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F "file=@folder/obfus1.png" -X POST localhost:5000/analyze')
-          os.system('sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F ' + folder_name + ' -X POST localhost:5000/analyze')
-          
-          #headers = {'Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP','Accept-Encoding: gzip, deflate, br'}
-	  #files = {'file': open('folder/obfus1.png', 'rb')}
-	  #r = requests.post("localhost:5000/analyze", files=files, headers=headers)
-	  #print(r.text)
+          #os.system('sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F ' + folder_name + ' -X POST localhost:5000/analyze')
+          cmd = 'sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F ' + folder_name + ' -X POST localhost:5000/analyze'
+          #p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+          out = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+          stdout,stderr = out.communicate()
+          output = stdout.split()[-1]
 
  	  client_send(self.socket, '@' + msg[0][1:] + '|ME')
-        elif msg[1].lower() in ['getfile']:
-          msg += client_recv(self.socket)[1:]  # add cip and cport sent from client
-          udpserver = UDPServer(self, msg)
-          empty_tuple = ()
-          thread.start_new_thread(udpserver.execute, empty_tuple)
-        elif msg[0].lower() == '#me':
+        elif msg[1].lower() in ['getfile'] and output != '{"result":"benign"}':
+          print output
+          print "\n MALWARE DETECTED. FILE TRANSFER BLOCKED.\n"
+        elif msg[1].lower() in ['getfile'] and output == '{"result":"benign"}':
+          self.cuckoo_monitor()
+          #msg += client_recv(self.socket)[1:]  # add cip and cport sent from client
+          #udpserver = UDPServer(self, msg)
+          #empty_tuple = ()
+          #thread.start_new_thread(udpserver.execute, empty_tuple)
+          if msg[1].lower() in ['getfile'] and self.latest_score > 1:
+            print "\n The file has been labelled malicious by the Cuckoo API"
+          elif msg[1].lower() in ['getfile'] and self.latest_score < 1:
+            print " "
+            msg += client_recv(self.socket)[1:]  # add cip and cport sent from client
+            udpserver = UDPServer(self, msg)
+            empty_tuple = ()
+            thread.start_new_thread(udpserver.execute, empty_tuple)
+        if msg[0].lower() == '#me':
           arg = None if len(msg) < 3 else msg[2].lower()
           self.handle_user_commands(msg[1].lower(), arg)
 
