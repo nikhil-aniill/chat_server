@@ -121,10 +121,10 @@ class ClientNode(object):
         send_err(self.socket, 'Max tries reached, closing connection.\n')
         self.suspended = True
     else:
-      send_ok(self.socket, 'Chatroom ' + name + ' created. Do you want to password protect the room? [yes/no]\n')
+      send_ok(self.socket, 'Chatroom ' + name + ' created.\n')
       self.passwd_protect_chatroom(name)
 
-  def passwd_protect_chatroom(self, room_name, tries=5):
+  def passwd_protect_chatroom(self, room_name):
     """
 
     :param room_name: Name of chatroom being joined.
@@ -133,15 +133,8 @@ class ClientNode(object):
     """
     if self.suspended:
       return
-    msg = decode_data(recv_data(self.socket))
-    if msg[0][:3].lower() == 'yes':
-      send_ok(self.socket, 'Please enter password.\n')
-      msg = decode_data(recv_data(self.socket))
-      send_ok(self.socket, 'Password ' + msg[0] + ' accepted.\n')
-      new_room = ChatRoom(self.server, room_name, self.username, msg[0])
-    else:
-      send_ok(self.socket, 'Chatroom has been made public.\n')
-      new_room = ChatRoom(self.server, room_name, self.username)
+    send_ok(self.socket, 'Chatroom has been made public.\n')
+    new_room = ChatRoom(self.server, room_name, self.username)
     self.server.chatrooms[room_name] = new_room
     self.chatroom = new_room
 
@@ -158,7 +151,6 @@ class ClientNode(object):
     for room_name in list(self.server.chatrooms):
       room = self.server.chatrooms[room_name]
       if name == room_name:
-        self.check_password(room)
         if self.suspended:
           return
         room.broadcast('INFO| New user ' + self.username + ' has joined\n', self.username)
@@ -177,21 +169,6 @@ class ClientNode(object):
     else:
       send_err(self.socket, 'Max tries reached, closing connection.\n')
       self.suspended = True
-
-  def check_password(self, room, tries=5):
-    if room.get_password() is None:
-      return
-    send_ok(self.socket, 'This chatroom is private. Please enter password.\n')
-    msg = decode_data(recv_data(self.socket))
-    if msg[0] != room.password:
-      if tries > 1:
-        send_err(self.socket, 'Sorry, incorrect password. You have ' + str(tries - 1) + ' tries left.\n')
-        self.check_password(room, tries - 1)
-      else:
-        send_err(self.socket, 'Max tries reached, closing connection.\n')
-        self.suspended = True
-    else:
-      send_ok(self.socket, 'Password accepted.\n')
 
   def accept_message(self):
     """
@@ -216,8 +193,6 @@ class ClientNode(object):
           send_list(self.socket, self.chatroom.get_usernames())
         elif msg[1].lower() == 'get_rooms':
           send_list(self.socket, self.server.get_chatrooms())
-        elif msg[1].lower() == 'get_passwd':
-          message = self.chatroom.get_password()
           if message is None:
             message = 'This chatroom is public and has no password protection.'
           send_data(self.socket, message)

@@ -10,6 +10,9 @@ import requests
 import subprocess
 import json
 from pprint import pprint
+import numpy
+import scipy.misc
+import array
 
 class Client(object):
   """
@@ -207,6 +210,20 @@ class Client(object):
             print "\n fileName is :", fileName
           else: 
             print "\nRisk score is less than 1 ! "
+  def rb_to_png(self,i,owd):
+    print "Converting .exe to 8 bit vector greyscale .png file"
+    file=i.split('.')[0]+'.png'
+    filename = i;
+    f = open(filename,'rb');
+    ln = os.path.getsize(filename);width = 256;
+    rem = ln%width;
+    a = array.array("B");
+    a.fromfile(f,ln-rem);
+    f.close();
+    g = numpy.reshape(a,(len(a)/width,width));
+    g = numpy.uint8(g);
+    scipy.misc.imsave(file,g);
+    os.chdir(owd)
 
   def listen_to_server(self): 
     """
@@ -225,7 +242,14 @@ class Client(object):
           client_send(self.socket, '@' + msg[0][1:] + '|ERROR: Please specify filename')
           continue
         if msg[1].lower() in ['whohas'] and self.check_file(msg[2]):
-	  folder_name = '"' + "file=@folder/" +  msg[2] + '"'
+          file_png=msg[2].split('.')[0]+'.png'
+          owd=os.getcwd()
+          file_exe=os.path.join("folder",msg[2])
+          self.rb_to_png(file_exe,owd)
+	  folder_name = '"' + "file=@folder/" +  file_png + '"'
+
+          print folder_name
+
        	  #os.system('sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F "file=@folder/obfus1.png" -X POST localhost:5000/analyze')
           #os.system('sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F ' + folder_name + ' -X POST localhost:5000/analyze')
           cmd = 'sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F ' + folder_name + ' -X POST localhost:5000/analyze'
