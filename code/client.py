@@ -197,12 +197,12 @@ class Client(object):
           print "\nPrinting info section only:"
           pprint(latest_report["info"])
           
-          latest_score = latest_report["info"]["score"]
-          print "\nRisk score is :", latest_score 
+          self.latest_score = latest_report["info"]["score"]
+          print "\nRisk score is :", self.latest_score 
 
           md5_hash = latest_report["target"]["file"]["md5"]
           print "\nThe md5 hash of the analyzed file is :", md5_hash
-          if latest_score > 1:
+          if self.latest_score > 1:
             print "\nRisk score is above 1 ! i'll call the API script"
             md5_hash = latest_report["target"]["file"]["md5"]
             print "\nHash of scanned file is :", md5_hash
@@ -234,6 +234,7 @@ class Client(object):
     stdout = ''
     stderr = ''
     output = ''
+
     while not self.suspended:
       msg = client_recv(self.socket)
       self.handle_exit_commands(msg)
@@ -247,9 +248,6 @@ class Client(object):
           file_exe=os.path.join("folder",msg[2])
           self.rb_to_png(file_exe,owd)
 	  folder_name = '"' + "file=@folder/" +  file_png + '"'
-
-          print folder_name
-
        	  #os.system('sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F "file=@folder/obfus1.png" -X POST localhost:5000/analyze')
           #os.system('sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F ' + folder_name + ' -X POST localhost:5000/analyze')
           cmd = 'sudo curl -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryW9b2lGAP" -H "Accept-Encoding: gzip, deflate, br" -F ' + folder_name + ' -X POST localhost:5000/analyze'
@@ -263,6 +261,7 @@ class Client(object):
           print output
           print "\n MALWARE DETECTED. FILE TRANSFER BLOCKED.\n"
         elif msg[1].lower() in ['getfile'] and output == '{"result":"benign"}':
+          print output
           self.cuckoo_monitor()
           #msg += client_recv(self.socket)[1:]  # add cip and cport sent from client
           #udpserver = UDPServer(self, msg)
@@ -271,7 +270,7 @@ class Client(object):
           if msg[1].lower() in ['getfile'] and self.latest_score > 1:
             print "\n The file has been labelled malicious by the Cuckoo API"
           elif msg[1].lower() in ['getfile'] and self.latest_score < 1:
-            print " "
+            print "Latest Score Less than 1."
             msg += client_recv(self.socket)[1:]  # add cip and cport sent from client
             udpserver = UDPServer(self, msg)
             empty_tuple = ()
