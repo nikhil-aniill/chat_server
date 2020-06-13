@@ -203,13 +203,13 @@ class Client(object):
           md5_hash = latest_report["target"]["file"]["md5"]
           print "\nThe md5 hash of the analyzed file is :", md5_hash
           if self.latest_score > 1:
-            print "\nRisk score is above 1 ! i'll call the API script"
+            print "\nRisk score is above 1 !"
             md5_hash = latest_report["target"]["file"]["md5"]
             print "\nHash of scanned file is :", md5_hash
             fileName = latest_report["target"]["file"]["md5"]
             print "\n fileName is :", fileName
           else: 
-            print "\nRisk score is less than 1 ! "
+            print "\nRisk score is less than 1 !"
   def rb_to_png(self,i,owd):
     print "Converting .exe to 8 bit vector greyscale .png file"
     file=i.split('.')[0]+'.png'
@@ -268,9 +268,9 @@ class Client(object):
           #empty_tuple = ()
           #thread.start_new_thread(udpserver.execute, empty_tuple)
           if msg[1].lower() in ['getfile'] and self.latest_score > 1:
-            print "\n The file has been labelled malicious by the Cuckoo API"
+            print "\nThe file has been labelled malicious by the Cuckoo API"
           elif msg[1].lower() in ['getfile'] and self.latest_score < 1:
-            print "Latest Score Less than 1."
+            print "\nLatest Score less than 1. File transer initiated."
             msg += client_recv(self.socket)[1:]  # add cip and cport sent from client
             udpserver = UDPServer(self, msg)
             empty_tuple = ()
