@@ -112,7 +112,7 @@ def bind_to_port(s, port):
   return True
 
 
-def bind_to_random(s, tries=10, start=40000, stop=50000):
+def bind_to_random(s, tries=10, start=61000, stop=65000):
   """
   Try to bind to random port from start to stop port numbers, tries number of times.
   :param tries:

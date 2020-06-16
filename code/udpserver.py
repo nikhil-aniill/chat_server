@@ -85,6 +85,7 @@ class UDPServer(object):
       self.udp_send('ERROR| File Not Found')
       self.suspended = True
 
+    print "connect done"
     self.udp_send('OK| Sending file on port ' + str(self.cport) + ' from |' + str(self.sip) + '|' + str(self.sport))
 
   def send_file(self):

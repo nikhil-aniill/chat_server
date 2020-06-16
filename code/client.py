@@ -33,7 +33,7 @@ class Client(object):
       self.file_share[filename] = True
     self.global_share = True
     self.max_share_count = 2
-    self.iplist = ['172.20.10.4','0.0.0.0']  # 2 server IP's to be added here 127.0.0.1
+    self.iplist = ['127.0.0.1','0.0.0.0']  # 2 server IP's to be added here 127.0.0.1
     self.portlist = [i for i in xrange(start, start+tries-1)]
     self.max_conn_lock = threading.Lock()
     self.get_args()
@@ -189,7 +189,11 @@ class Client(object):
       self.suspended = True
 
   def cuckoo_monitor(self):
-    print "\n The watchdog is active now, waiting for any new Malware analysis..."
+    #HEADERS = {"Authorization": "Bearer 5aikhp6GIS95B-xTpQUYGQ"}
+    #r = requests.post("http://localhost:8090/tasks/create/submit", files=[("files", open("/home/kali/Desktop/benign1.exe", "rb")),], headers=HEADERS)
+    
+    print "\n The sandbox is active now, waiting for any new Malware analysis..."
+    
     reports_dir = '/home/kali/Desktop/Cuckoo/storage/analyses/'
     latest_report='latest/reports/report.json'
     with open(reports_dir+latest_report) as f:
@@ -206,9 +210,13 @@ class Client(object):
             print "\nRisk score is above 1 !"
             md5_hash = latest_report["target"]["file"]["md5"]
             print "\nHash of scanned file is :", md5_hash
-            fileName = latest_report["target"]["file"]["md5"]
+            fileName = latest_report["target"]["file"]["name"]
             print "\n fileName is :", fileName
-          else: 
+          else:
+            fileName = latest_report["target"]["file"]["name"]
+            print "\n fileName is :" +fileName
+            path = latest_report["target"]["file"]["path"]
+            print path
             print "\nRisk score is less than 1 !"
   def rb_to_png(self,i,owd):
     print "Converting .exe to 8 bit vector greyscale .png file"
@@ -261,7 +269,7 @@ class Client(object):
           print output
           print "\n MALWARE DETECTED. FILE TRANSFER BLOCKED.\n"
         elif msg[1].lower() in ['getfile'] and output == '{"result":"benign"}':
-          print output
+          print "The output of DMD API is " + output
           self.cuckoo_monitor()
           #msg += client_recv(self.socket)[1:]  # add cip and cport sent from client
           #udpserver = UDPServer(self, msg)
